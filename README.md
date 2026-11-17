@@ -14,6 +14,23 @@ Feito para quem trabalha com arquivos grandes (vídeo, bruto de câmera) e canso
 
 O instalador baixa o que falta (Python, se você deixar, o [rclone](https://rclone.org) e as bibliotecas da interface) e cria o atalho com ícone.
 
+## Preciso mesmo criar a chave do Google?
+
+Não é obrigatório. Dá para usar o app só fazendo login nas contas, sem criar nada no Google Cloud. A diferença:
+
+| | Só login (sem chave) | Com a sua chave do Google |
+|---|---|---|
+| **Configuração** | Nenhuma: instala, adiciona a conta e usa | ~10 min, uma vez só, no Google Cloud (passo a passo no LEIA-ME) |
+| **Quem fornece o acesso** | O acesso compartilhado do rclone, dividido entre usuários do mundo todo | Um acesso só seu |
+| **Velocidade e estabilidade** | Pode ficar lento ou recusar pedidos nos horários de pico. Nos nossos testes, listar pastas chegou a travar por minutos e a verificação de links foi recusada várias vezes ("O Google está limitando as consultas") | Rápido e estável: o limite de consultas é só seu |
+| **Onde mais pesa** | Pastas com muitos arquivos pequenos e verificação de links. Arquivos grandes, depois que começam, sobem e descem bem | Sem diferença entre os casos |
+| **Futuro** | O próprio rclone avisa que esse acesso compartilhado **está sendo desativado pelo Google em 2026**. Pode parar de funcionar a qualquer momento | Não depende do rclone |
+| **Tela de login** | Normal, sem avisos | Mostra "O Google não verificou este app" (é o seu app; basta clicar em Avançado → Acessar) |
+| **Validade do login** | Não expira | Não expira se você publicar o app; em modo Teste, expira a cada 7 dias |
+| **Contas de empresa (Google Workspace)** | O administrador pode bloquear | O administrador pode bloquear |
+
+**Resumo:** para experimentar ou para uso leve, o login sozinho resolve. Para trabalho do dia a dia, com pastas grandes ou muitos arquivos, vale criar a chave. E dá para começar sem e colocar a chave depois: é só colar no botão **Chave Google** e adicionar as contas de novo.
+
 ## O que ele faz
 
 - **Enviar:** escolha pastas e arquivos, a conta e a pasta de destino no Drive. Se cair a conexão, é só enviar de novo: ele pula o que já subiu e confere tudo por checksum.

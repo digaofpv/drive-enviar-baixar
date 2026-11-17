@@ -62,7 +62,7 @@
 <nav>
   <ol>
     <li><a href="#instalar">Instalar (Mac ou Windows)</a></li>
-    <li><a href="#chave">Criar sua chave do Google</a></li>
+    <li><a href="#chave">Criar sua chave do Google (opcional)</a></li>
     <li><a href="#contas">Colocar a chave e as contas no app</a></li>
     <li><a href="#usar">Enviar e baixar</a></li>
     <li><a href="#limites">Limites do Google</a></li>
@@ -99,8 +99,19 @@
 </section>
 
 <section id="chave">
-  <h2>2. Criar sua chave do Google (uma vez só, ~10 min)</h2>
-  <p>O app fala com o Google Drive usando uma "chave" de acesso. Cada pessoa cria a sua, de graça. Sem ela o app até funciona, usando um acesso compartilhado por usuários do mundo todo, mas fica lento, falha às vezes e esse acesso está sendo desativado pelo Google.</p>
+  <h2>2. Criar sua chave do Google (opcional, recomendado, ~10 min)</h2>
+  <p>O app fala com o Google Drive usando uma "chave" de acesso. Cada pessoa pode criar a sua, de graça.</p>
+  <h3>Posso pular este passo?</h3>
+  <p>Pode. Sem chave, é só adicionar as contas no app (passo 3) e usar. A diferença:</p>
+  <table>
+    <tr><th></th><th>Só login (sem chave)</th><th>Com a sua chave</th></tr>
+    <tr><td>Configuração</td><td>Nenhuma</td><td>~10 min, uma vez só</td></tr>
+    <tr><td>Velocidade e estabilidade</td><td>Acesso dividido com usuários do mundo todo: pode ficar lento ou recusar pedidos ("O Google está limitando as consultas"), principalmente com muitos arquivos pequenos e na verificação de links</td><td>Rápido e estável: o limite é só seu</td></tr>
+    <tr><td>Futuro</td><td>O rclone avisa que esse acesso compartilhado está sendo desativado pelo Google em 2026: pode parar a qualquer momento</td><td>Não depende do rclone</td></tr>
+    <tr><td>Tela de login</td><td>Normal, sem avisos</td><td>Mostra "O Google não verificou este app" (é esperado)</td></tr>
+    <tr><td>Validade do login</td><td>Não expira</td><td>Não expira se publicar o app (passo 2.6); em modo Teste, 7 dias</td></tr>
+  </table>
+  <p><b>Resumo:</b> para experimentar ou uso leve, o login sozinho resolve. Para trabalho do dia a dia, vale criar a chave. Dá para começar sem e colocar depois: cole a chave no botão <b>Chave Google</b> e adicione as contas de novo.</p>
   <div class="tip">Use o seu Gmail pessoal para criar a chave. A mesma chave serve para todas as suas contas, inclusive as de trabalho. Os menus do Google Cloud mudam de nome de vez em quando: procure pelo nome mais parecido.</div>
 
   <h3>2.1 Criar o projeto</h3>
