@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Drive Enviar e Baixar — Leia-me</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #ffffff; --text: #1d232b; --muted: #5d6877; --line: #e2e6eb;
+    --accent: #2563eb; --accent-soft: #e8efff; --warn-bg: #fff6e0; --warn-line: #f0c75e;
+    --code-bg: #eef1f5;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14171c; --card: #1d2229; --text: #e6e9ee; --muted: #9aa4b2; --line: #2c333d;
+      --accent: #6ea2ff; --accent-soft: #1d2a44; --warn-bg: #2e2716; --warn-line: #8a6d1f;
+      --code-bg: #252b34;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  }
+  main { max-width: 820px; margin: 0 auto; padding: 32px 16px 64px; }
+  header { display: flex; align-items: center; gap: 16px; margin-bottom: 8px; }
+  header img { width: 64px; height: 64px; }
+  h1 { font-size: 28px; margin: 0; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  nav { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 20px; margin-bottom: 24px; }
+  nav ol { margin: 0; padding-left: 20px; columns: 2; column-gap: 32px; }
+  nav a { color: var(--accent); text-decoration: none; }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 4px 24px 20px; margin-bottom: 20px; }
+  h2 { font-size: 21px; margin: 20px 0 8px; }
+  h3 { font-size: 17px; margin: 18px 0 6px; }
+  ol li, ul li { margin: 4px 0; }
+  code, kbd {
+    background: var(--code-bg); border-radius: 5px; padding: 1px 6px;
+    font: 14px "SF Mono", Menlo, Consolas, monospace;
+  }
+  b.ui { color: var(--accent); }
+  .tip, .warn { border-radius: 10px; padding: 10px 14px; margin: 12px 0; }
+  .tip { background: var(--accent-soft); }
+  .warn { background: var(--warn-bg); border: 1px solid var(--warn-line); }
+  table { border-collapse: collapse; width: 100%; margin: 8px 0; }
+  th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 14px; }
+  @media (max-width: 600px) { nav ol { columns: 1; } section { padding: 4px 16px 16px; } }
+</style>
+</head>
+<body>
+<main>
+
+<header>
+  <img src="app/icone.png" alt="">
+  <div>
+    <h1>Drive Enviar e Baixar</h1>
+  </div>
+</header>
+<p class="sub">Envia pastas inteiras para o Google Drive e baixa pastas por link, direto no disco: sem cache, sem compactar e com progresso, velocidade e tempo restante de cada arquivo. Funciona com várias contas Google.</p>
+
+<nav>
+  <ol>
+    <li><a href="#instalar">Instalar (Mac ou Windows)</a></li>
+    <li><a href="#chave">Criar sua chave do Google</a></li>
+    <li><a href="#contas">Colocar a chave e as contas no app</a></li>
+    <li><a href="#usar">Enviar e baixar</a></li>
+    <li><a href="#limites">Limites do Google</a></li>
+    <li><a href="#seguranca">Segurança</a></li>
+    <li><a href="#problemas">Problemas comuns</a></li>
+    <li><a href="#remover">Atualizar e desinstalar</a></li>
+  </ol>
+</nav>
+
+<section id="instalar">
+  <h2>1. Instalar</h2>
+  <p>Primeiro descompacte o zip (duplo clique nele) e entre na pasta <b>Drive Enviar e Baixar</b>.</p>
+
+  <h3>No Mac</h3>
+  <p>Funciona em Macs com chip Apple (M1, M2…) ou Intel, com macOS 11 ou mais novo.</p>
+  <ol>
+    <li><b>Instale o Python</b> (gratuito): em <a href="https://www.python.org/downloads/macos/">python.org/downloads/macos</a>, baixe o <i>macOS 64-bit universal2 installer</i> da versão mais recente e instale normalmente. O Python que já vem no Mac não serve.</li>
+    <li>Dê <b>duplo clique</b> em <code>Instalar - Mac.command</code>.</li>
+    <li>Se aparecer <i>"não pode ser aberto porque é de um desenvolvedor não identificado"</i>: clique em <b class="ui">OK</b>, abra <b>Ajustes do Sistema → Privacidade e Segurança</b>, role até o aviso sobre o instalador e clique em <b class="ui">Abrir Mesmo Assim</b>. Em versões mais antigas do macOS, basta clicar com o botão direito no arquivo → <b class="ui">Abrir</b>.</li>
+    <li>Uma janela do Terminal mostra o progresso (uns 2 minutos). No fim, o app <b>Drive Enviar e Baixar</b> fica na pasta Aplicativos e abre sozinho.</li>
+    <li>Para fixar no Dock: com o app aberto, botão direito no ícone do Dock → <b class="ui">Opções → Manter no Dock</b>.</li>
+  </ol>
+  <div class="tip">Se o Terminal disser "Permissão negada", abra o app <b>Terminal</b>, digite <code>bash </code> (com um espaço no fim), arraste o <code>Instalar - Mac.command</code> para dentro da janela e pressione Enter.</div>
+
+  <h3>No Windows</h3>
+  <p>Funciona no Windows 10 e 11.</p>
+  <ol>
+    <li>Dê <b>duplo clique</b> em <code>Instalar - Windows.bat</code>.</li>
+    <li>Se aparecer <i>"O Windows protegeu o computador"</i>: clique em <b class="ui">Mais informações → Executar assim mesmo</b>.</li>
+    <li>Se você não tiver o Python, o instalador oferece instalar sozinho (responda <code>s</code>). Se não conseguir, ele abre a página do Python: baixe o instalador do Windows, <b>marque "Add python.exe to PATH"</b> na primeira tela, instale e rode o <code>Instalar - Windows.bat</code> de novo.</li>
+    <li>Uma janela preta mostra o progresso (uns 2 minutos). No fim, o atalho <b>Drive Enviar e Baixar</b> aparece na Área de Trabalho e no Menu Iniciar, e o app abre sozinho.</li>
+    <li>Para fixar na barra de tarefas: Menu Iniciar → <b>Drive Enviar e Baixar</b> → botão direito → <b class="ui">Fixar na barra de tarefas</b>.</li>
+  </ol>
+</section>
+
+<section id="chave">
+  <h2>2. Criar sua chave do Google (uma vez só, ~10 min)</h2>
+  <p>O app fala com o Google Drive usando uma "chave" de acesso. Cada pessoa cria a sua, de graça. Sem ela o app até funciona, usando um acesso compartilhado por usuários do mundo todo, mas fica lento, falha às vezes e esse acesso está sendo desativado pelo Google.</p>
+  <div class="tip">Use o seu Gmail pessoal para criar a chave. A mesma chave serve para todas as suas contas, inclusive as de trabalho. Os menus do Google Cloud mudam de nome de vez em quando: procure pelo nome mais parecido.</div>
+
+  <h3>2.1 Criar o projeto</h3>
+  <ol>
+    <li>Abra <a href="https://console.cloud.google.com">console.cloud.google.com</a> e entre com seu Gmail.</li>
+    <li>No topo, clique no seletor de projeto → <b class="ui">Novo projeto</b>. Nome: <code>drive-app</code> (qualquer um) → <b class="ui">Criar</b>. Depois selecione o projeto criado.</li>
+    <li>Se aparecer oferta de "teste gratuito com US$ 300", pode dispensar. Não precisa cadastrar cartão: nada disso é cobrado.</li>
+  </ol>
+
+  <h3>2.2 Ativar a API do Drive</h3>
+  <ol>
+    <li>Menu ☰ → <b class="ui">APIs e serviços → Biblioteca</b>.</li>
+    <li>Procure <b>Google Drive API</b> → <b class="ui">Ativar</b>.</li>
+  </ol>
+
+  <h3>2.3 Configurar a tela de permissão</h3>
+  <ol>
+    <li>Menu ☰ → <b class="ui">APIs e serviços → Tela de permissão OAuth</b> (pode aparecer como <b>Google Auth Platform</b>) → <b class="ui">Começar</b>.</li>
+    <li>Nome do app: <code>Drive App</code>. E-mail de suporte: o seu.</li>
+    <li>Público: <b>Externo</b>.</li>
+    <li>E-mail de contato: o seu → aceite os termos → <b class="ui">Criar</b>.</li>
+  </ol>
+
+  <h3>2.4 Cadastrar quem pode usar</h3>
+  <ol>
+    <li>No menu da esquerda, <b class="ui">Público-alvo → Usuários de teste → Add users</b>.</li>
+    <li>Adicione o e-mail de <b>cada conta</b> que você vai usar no app (pessoal e de trabalho) → <b class="ui">Salvar</b>.</li>
+  </ol>
+  <div class="warn">Confira a grafia do e-mail letra por letra. Um e-mail digitado errado causa o erro <i>"Acesso bloqueado: o app não concluiu o processo de verificação"</i> na hora do login.</div>
+
+  <h3>2.5 Criar a chave</h3>
+  <ol>
+    <li>Menu da esquerda: <b class="ui">Clientes → Criar cliente</b>.</li>
+    <li>Tipo de aplicativo: <b>App para computador</b>. Nome: <code>Drive App</code> → <b class="ui">Criar</b>.</li>
+    <li>Copie o <b>ID do cliente</b> e a <b>Chave secreta do cliente</b> (ou clique em <b class="ui">Baixar o JSON</b>). <b>A chave secreta só aparece agora</b>; se perder, crie outro cliente.</li>
+  </ol>
+
+  <h3>2.6 Publicar (recomendado)</h3>
+  <p>Enquanto o app estiver em modo <b>Teste</b>, o login de cada conta expira a cada <b>7 dias</b>. Publicando, ele não expira mais.</p>
+  <ol>
+    <li>Menu da esquerda: <b class="ui">Branding</b>. O Google pede dois links para publicar:
+      <ul>
+        <li><b>Página inicial do aplicativo</b> e <b>Link da Política de Privacidade</b>: use o endereço de um site seu (portfólio, por exemplo).</li>
+        <li>Em <b>Domínios autorizados → Adicionar domínio</b>, coloque o domínio desse site (ex.: <code>meusite.com.br</code>).</li>
+        <li>Sem site? Uma opção gratuita é o GitHub Pages: crie uma conta em github.com e use <code>https://SEU-USUARIO.github.io/drive-app/</code> e <code>https://SEU-USUARIO.github.io/drive-app/privacidade.html</code>, com o domínio <code>SEU-USUARIO.github.io</code>. Nos nossos testes o Google aceitou assim.</li>
+      </ul>
+      Clique em <b class="ui">Salvar</b>.</li>
+    <li><b class="ui">Público-alvo → Publicar app → Confirmar</b>. O status muda para <b>Em produção</b>. Não precisa enviar o app para verificação do Google.</li>
+  </ol>
+  <p>Se o botão <b>Publicar app</b> continuar cinza, recarregue a página (F5). Se preferir não publicar, o app funciona em modo Teste: basta refazer o login das contas uma vez por semana.</p>
+</section>
+
+<section id="contas">
+  <h2>3. Colocar a chave e as contas no app</h2>
+  <ol>
+    <li>No app, clique em <b class="ui">Chave Google ⚠</b>, cole o <b>ID do cliente</b> e a <b>Chave secreta</b> → <b class="ui">Salvar</b>. O botão passa a mostrar <b>Chave Google ✓</b>.</li>
+    <li>Clique em <b class="ui">+ Adicionar conta</b> e dê um apelido sem espaços (ex.: <code>pessoal</code>, <code>trabalho</code>).</li>
+    <li>O navegador abre: escolha a conta Google.</li>
+    <li>Vai aparecer <i>"O Google não verificou este app"</i>. É esperado, porque o app é seu: clique em <b class="ui">Avançado → Acessar Drive App (não seguro)</b> → <b class="ui">Continuar / Permitir</b>.</li>
+    <li>Quando o navegador disser que deu certo, volte para o app. A conta aparece no topo, com o e-mail ao lado. Repita para cada conta.</li>
+  </ol>
+  <div class="tip">Se você já tinha adicionado contas antes de colocar a chave, remova e adicione de novo para elas passarem a usar a sua chave.</div>
+</section>
+
+<section id="usar">
+  <h2>4. Enviar e baixar</h2>
+  <h3>Enviar para o Drive</h3>
+  <ol>
+    <li>Escolha a conta no topo.</li>
+    <li>Aba <b class="ui">Enviar para o Drive</b>: adicione pastas e/ou arquivos.</li>
+    <li>Digite a pasta de destino (ex.: <code>Clientes/Projeto X</code>) ou use <b class="ui">Procurar no Drive…</b>. Se a pasta não existir, ela é criada.</li>
+    <li>Clique em <b class="ui">Enviar</b>.</li>
+  </ol>
+  <h3>Baixar do Drive</h3>
+  <ol>
+    <li>Aba <b class="ui">Baixar do Drive</b>: cole o link de uma pasta ou arquivo e clique em <b class="ui">Verificar</b>. O app mostra nome, tamanho e espaço livre no disco, e descobre sozinho qual das suas contas tem acesso ao link.</li>
+    <li>Escolha onde salvar e clique em <b class="ui">Baixar</b>. A pasta vem inteira, sem zip.</li>
+  </ol>
+  <p>Durante a transferência você vê o progresso total, velocidade atual e média, tempo decorrido e restante, além do andamento de cada arquivo. Se a conexão cair ou você cancelar, é só repetir: o app pula o que já foi transferido e confere tudo no final.</p>
+</section>
+
+<section id="limites">
+  <h2>5. Limites do Google</h2>
+  <table>
+    <tr><th>Limite</th><th>Valor</th><th>Na prática</th></tr>
+    <tr><td>Envio por dia</td><td>750 GB por conta</td><td>Passando disso, os envios dessa conta param até o dia seguinte.</td></tr>
+    <tr><td>Download por dia</td><td>10 TB por conta</td><td>Dificilmente você chega nisso.</td></tr>
+    <tr><td>Tamanho de arquivo</td><td>5 TB</td><td>Sem impacto para vídeo.</td></tr>
+    <tr><td>Custo</td><td>Gratuito</td><td>A API do Drive não cobra nada.</td></tr>
+    <tr><td>Espaço</td><td>O da sua conta</td><td>O app não muda o armazenamento de cada Drive.</td></tr>
+  </table>
+  <p>Valores da documentação do Google; ele pode mudá-los sem aviso.</p>
+</section>
+
+<section id="seguranca">
+  <h2>6. Segurança</h2>
+  <ul>
+    <li>Os logins e a chave ficam só no seu computador:
+      <ul>
+        <li>Mac: <code>~/Library/Application Support/Drive Enviar e Baixar</code></li>
+        <li>Windows: <code>%LOCALAPPDATA%\Drive Enviar e Baixar</code> (cole esse endereço na barra do Explorador de Arquivos)</li>
+      </ul></li>
+    <li>Os arquivos <code>rclone.conf</code> (logins) e <code>uploader_settings.json</code> (chave) dão acesso aos seus Drives. <b>Não envie esses arquivos para ninguém</b> e não os coloque em pastas sincronizadas ou compartilhadas.</li>
+    <li>Ao compartilhar o app, compartilhe só esta pasta de instalação. Ela não contém nenhum login ou chave.</li>
+    <li>Para cortar o acesso do app a uma conta a qualquer momento: <a href="https://myaccount.google.com/permissions">myaccount.google.com/permissions</a> → remova o app.</li>
+  </ul>
+</section>
+
+<section id="problemas">
+  <h2>7. Problemas comuns</h2>
+  <table>
+    <tr><th>Sintoma</th><th>O que fazer</th></tr>
+    <tr><td>"Acesso bloqueado: o app não concluiu o processo de verificação"</td><td>O e-mail dessa conta não está em <b>Usuários de teste</b> (passo 2.4), ou foi digitado errado.</td></tr>
+    <tr><td>"Acesso bloqueado" numa conta de empresa (Google Workspace)</td><td>O administrador da empresa bloqueia apps não verificados. Peça a liberação ao administrador.</td></tr>
+    <tr><td>Contas param de funcionar depois de uma semana</td><td>O app está em modo Teste (passo 2.6). Publique, ou remova e adicione as contas de novo.</td></tr>
+    <tr><td>"O Google está limitando as consultas agora"</td><td>Aguarde um minuto. Se acontecer sempre, confira se a chave foi colocada (botão <b>Chave Google ✓</b>) e se as contas foram adicionadas depois disso.</td></tr>
+    <tr><td>"Nenhuma das contas cadastradas tem acesso a esse link"</td><td>Adicione no app a conta que recebeu o compartilhamento, ou peça para compartilharem com uma das suas contas.</td></tr>
+    <tr><td>O app não abre</td><td>Rode o instalador do seu sistema de novo. No Mac, se continuar, veja o arquivo <code>app.log</code> na pasta citada em Segurança.</td></tr>
+    <tr><td>Mac: na barra de menus aparece "Python"</td><td>Normal: o app roda sobre o Python. Não afeta nada.</td></tr>
+    <tr><td>Windows: fixei na barra de tarefas e aparece o ícone do Python</td><td>Desafixe e fixe de novo pelo <b>Menu Iniciar</b> (botão direito em Drive Enviar e Baixar → Fixar na barra de tarefas).</td></tr>
+  </table>
+</section>
+
+<section id="remover">
+  <h2>8. Atualizar e desinstalar</h2>
+  <ul>
+    <li><b>Atualizar:</b> recebeu uma versão nova desta pasta? Rode o instalador do seu sistema de novo. As contas e a chave continuam salvas.</li>
+    <li><b>Desinstalar:</b> rode <code>Desinstalar - Mac.command</code> ou <code>Desinstalar - Windows.bat</code>. Ele remove o app, os logins e a chave do computador. Nada é apagado do Google Drive.</li>
+  </ul>
+</section>
+
+</main>
+</body>
+</html>

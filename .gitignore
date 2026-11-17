@@ -1,0 +1,22 @@
+# Lista de permissao: TUDO fica fora do Git, exceto o que esta liberado abaixo.
+# Assim logins, chaves, logs e arquivos novos nunca entram por engano.
+/*
+!/.gitignore
+!/README.md
+!/LICENSE
+!/drive_uploader.pyw
+!/montar_pacote.py
+!/pacote/
+/pacote/*
+!/pacote/Drive Enviar e Baixar/
+/pacote/Drive Enviar e Baixar/app/*
+!/pacote/Drive Enviar e Baixar/app/instalar_windows.ps1
+!/pacote/Drive Enviar e Baixar/app/desinstalar_windows.ps1
+
+# Bloqueio extra (vale em qualquer pasta, mesmo se algo acima for liberado)
+rclone.conf
+uploader_settings.json
+*.log
+*.zip
+*.exe
+libs/
