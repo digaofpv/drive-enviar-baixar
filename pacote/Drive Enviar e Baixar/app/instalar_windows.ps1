@@ -87,7 +87,7 @@ Write-Host "      $((& (Join-Path $Destino 'rclone.exe') version) | Select-Objec
 # 3. Bibliotecas da interface
 Write-Host '[3/4] Instalando as bibliotecas da interface...'
 $pipLog = Join-Path $Destino 'pip.log'
-& $PY -m pip install --upgrade --target (Join-Path $Destino 'libs') customtkinter certifi --disable-pip-version-check -q 2> $pipLog
+& $PY -m pip install --upgrade --target (Join-Path $Destino 'libs') customtkinter certifi qrcode --disable-pip-version-check -q 2> $pipLog
 if ($LASTEXITCODE -ne 0) { Falha "nao consegui instalar as bibliotecas. Detalhes em: $pipLog" }
 
 # 4. Programa e atalhos

@@ -18,11 +18,39 @@ import time
 import tkinter as tk
 import urllib.error
 import urllib.request
+import webbrowser
 from tkinter import filedialog, messagebox
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(BASE, "libs"))
 import customtkinter as ctk  # noqa: E402
+
+APP_NAME = "Drive Enviar e Baixar"
+APP_VERSION = "1.1"
+DEV_HANDLE = "@digao.fpv"
+DEV_URL = "https://instagram.com/digao.fpv"
+REPO_URL = "https://github.com/digaofpv/drive-enviar-baixar"
+
+def _load_env(path):
+    """Le um arquivo .env simples (CHAVE=valor) para as variaveis de ambiente."""
+    try:
+        with open(path, encoding="utf-8") as fh:
+            for line in fh:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    k, v = line.split("=", 1)
+                    os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
+    except OSError:
+        pass
+
+
+_load_env(os.path.join(BASE, ".env"))
+
+# Doacao por Pix (opcional). Sem PIX_KEY (no .env ou no ambiente), o botao "Apoiar" nao aparece.
+PIX_KEY = os.environ.get("PIX_KEY", "").strip() or "d03514da-0d0b-4faf-a602-9535738eb698"  # chave aleatoria (publica, para doacoes)
+PIX_NAME = "DIGAO FPV"                              # nome exibido no QR (o banco mostra o titular real)
+PIX_CITY = "CURITIBA"                               # cidade do titular (ate 15 letras)
+PIX_VALUE = "10.00"                                 # valor sugerido no QR
 
 IS_WIN = sys.platform.startswith("win")
 IS_MAC = sys.platform == "darwin"
@@ -200,6 +228,67 @@ def free_space(path):
         return None
 
 
+# ------------------------------------------------------------------ Pix
+def _crc16(data):
+    crc = 0xFFFF
+    for b in data.encode("utf-8"):
+        crc ^= b << 8
+        for _ in range(8):
+            crc = ((crc << 1) ^ 0x1021) if crc & 0x8000 else (crc << 1)
+            crc &= 0xFFFF
+    return f"{crc:04X}"
+
+
+def _plain(text, size):
+    import unicodedata
+    t = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode()
+    return re.sub(r"[^A-Za-z0-9 .\-]", "", t).strip()[:size]
+
+
+def pix_payload(key, name, city, value=None, txid="***"):
+    """Codigo Pix 'copia e cola' (BR Code estatico do Banco Central)."""
+    def f(i, v):
+        return f"{i}{len(v):02d}{v}"
+    acc = f("00", "br.gov.bcb.pix") + f("01", key.strip())
+    p = f("00", "01") + f("26", acc) + f("52", "0000") + f("53", "986")
+    if value:
+        p += f("54", value)
+    p += f("58", "BR") + f("59", _plain(name, 25)) + f("60", _plain(city, 15)) + f("62", f("05", txid))
+    p += "6304"
+    return p + _crc16(p)
+
+
+PARTIAL_RE = re.compile(r"\.[0-9a-fA-F]{8}\.partial$")  # nome provisorio do rclone: arquivo.ext.1a2b3c4d.partial
+
+
+def find_partials(root):
+    """Arquivos incompletos deixados pelo rclone (downloads interrompidos)."""
+    out = []
+    if not root or not os.path.isdir(root):
+        return out
+    for r, _, files in os.walk(root):
+        for f in files:
+            if PARTIAL_RE.search(f):
+                p = os.path.join(r, f)
+                try:
+                    out.append((p, os.path.getsize(p)))
+                except OSError:
+                    pass
+    return out
+
+
+def delete_files(items):
+    ok, freed = 0, 0
+    for p, size in items:
+        try:
+            os.remove(p)
+            ok += 1
+            freed += size
+        except OSError:
+            pass
+    return ok, freed
+
+
 def load_settings():
     try:
         with open(SETTINGS, encoding="utf-8") as f:
@@ -337,7 +426,7 @@ class BrowseDialog(ctk.CTkToplevel):
 class App(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.title("Drive: enviar e baixar")
+        self.title(f"{APP_NAME}  v{APP_VERSION}")
         set_icon(self)
         h = min(930, self.winfo_screenheight() - 90)  # cabe em telas menores (ex.: MacBook Air)
         self.geometry(f"960x{h}")
@@ -368,8 +457,22 @@ class App(ctk.CTk):
 
     # ------------------------------------------------------------ montagem
     def build_header(self):
+        # faixa do topo: nome, versao, desenvolvedor e "Sobre"
+        top = ctk.CTkFrame(self, fg_color="transparent")
+        top.pack(fill="x", padx=18, pady=(10, 0))
+        ctk.CTkLabel(top, text=APP_NAME, font=(UI, 16, "bold"), text_color=TEXT).pack(side="left")
+        ctk.CTkLabel(top, text=f"v{APP_VERSION}", font=(UI, 11, "bold"), text_color=ACCENT,
+                     fg_color=CARD2, corner_radius=6, width=44, height=20).pack(side="left", padx=8)
+        ctk.CTkButton(top, text="ⓘ  Sobre", command=self.about_dialog, width=74, height=26,
+                      fg_color="transparent", hover_color=CARD2, text_color=MUTED,
+                      font=(UI, 12), corner_radius=6).pack(side="right")
+        dev = ctk.CTkLabel(top, text=f"desenvolvido por {DEV_HANDLE}", font=(UI, 12, "underline"),
+                           text_color=MUTED, cursor="hand2")
+        dev.pack(side="right", padx=10)
+        dev.bind("<Button-1>", lambda e: webbrowser.open(DEV_URL))
+
         f = ctk.CTkFrame(self, fg_color=CARD, corner_radius=12)
-        f.pack(fill="x", padx=14, pady=(14, 6))
+        f.pack(fill="x", padx=14, pady=(8, 6))
         ctk.CTkLabel(f, text="Conta", font=(UI, 13, "bold"), text_color=MUTED
                      ).pack(side="left", padx=(16, 8), pady=14)
         self.om_remote = ctk.CTkOptionMenu(
@@ -386,6 +489,97 @@ class App(ctk.CTk):
         self.btn_key = btn(f, "", self.key_dialog, width=120)
         self.btn_key.pack(side="right", padx=6)
         self.update_key_button()
+
+    def about_dialog(self):
+        d = ctk.CTkToplevel(self)
+        d.title("Sobre")
+        set_icon(d)
+        d.geometry("460x470")
+        d.resizable(False, False)
+        d.configure(fg_color=BG)
+        d.transient(self)
+        if os.path.exists(ICON_PNG):
+            try:
+                img = tk.PhotoImage(file=ICON_PNG)
+                img = img.subsample(max(1, img.width() // 88))
+                d._img = img
+                tk.Label(d, image=img, bg=BG, borderwidth=0).pack(pady=(22, 6))
+            except Exception:
+                pass
+        ctk.CTkLabel(d, text=APP_NAME, font=(UI, 20, "bold"), text_color=TEXT).pack()
+        ctk.CTkLabel(d, text=f"Versão {APP_VERSION}", font=(UI, 13), text_color=MUTED).pack(pady=(2, 12))
+        ctk.CTkLabel(d, text="Envia e baixa pastas do Google Drive direto no disco,\nsem cache e sem compactar.",
+                     font=(UI, 12), text_color=TEXT, justify="center").pack(pady=(0, 14))
+
+        def link(text, url, size=13, bold=False):
+            lb = ctk.CTkLabel(d, text=text, font=(UI, size, "bold" if bold else "normal"), text_color=ACCENT,
+                              cursor="hand2")
+            lb.pack(pady=2)
+            lb.bind("<Button-1>", lambda e: webbrowser.open(url))
+
+        ctk.CTkLabel(d, text="Desenvolvido por", font=(UI, 11), text_color=MUTED).pack()
+        link(f"{DEV_HANDLE}  (Instagram)", DEV_URL, 15, True)
+        link("Código e atualizações no GitHub", REPO_URL, 12)
+        rc_ver = ""
+        try:
+            rc_ver = rclone(["version"], timeout=15).stdout.splitlines()[0].strip()
+        except Exception:
+            pass
+        ctk.CTkLabel(d, text=f"Transferências feitas pelo {rc_ver or 'rclone'} (rclone.org)  ·  licença MIT",
+                     font=(UI, 10), text_color=MUTED).pack(pady=(14, 0))
+        row = ctk.CTkFrame(d, fg_color="transparent")
+        row.pack(pady=14)
+        if PIX_KEY:
+            btn(row, "♥  Apoiar o projeto", lambda: (d.destroy(), self.donate_dialog()), "primary",
+                width=170).pack(side="left", padx=6)
+        btn(row, "Fechar", d.destroy, width=100).pack(side="left", padx=6)
+        d.after(200, lambda: (d.lift(), d.focus_force()))
+
+    def donate_dialog(self):
+        d = ctk.CTkToplevel(self)
+        d.title("Apoiar o projeto")
+        set_icon(d)
+        d.geometry("420x560")
+        d.resizable(False, False)
+        d.configure(fg_color=BG)
+        d.transient(self)
+        valor = PIX_VALUE.replace(".", ",")
+        ctk.CTkLabel(d, text="Gostou do app?", font=(UI, 20, "bold"), text_color=TEXT).pack(pady=(22, 2))
+        ctk.CTkLabel(d, text=f"Ele é gratuito. Se ele te poupou tempo, considere\napoiar com um Pix de R$ {valor}.",
+                     font=(UI, 12), text_color=MUTED, justify="center").pack(pady=(0, 14))
+        code = pix_payload(PIX_KEY, PIX_NAME, PIX_CITY, PIX_VALUE)
+        try:
+            import qrcode
+            qr = qrcode.QRCode(border=3, error_correction=qrcode.constants.ERROR_CORRECT_M)
+            qr.add_data(code)
+            qr.make(fit=True)
+            mtx = qr.get_matrix()
+            px = max(3, 230 // len(mtx))
+            side = px * len(mtx)
+            cv = tk.Canvas(d, width=side, height=side, bg="white", highlightthickness=0)
+            for y, line in enumerate(mtx):
+                for x, on in enumerate(line):
+                    if on:
+                        cv.create_rectangle(x * px, y * px, x * px + px, y * px + px, fill="black", width=0)
+            cv.pack(pady=(0, 6))
+            ctk.CTkLabel(d, text=f"Aponte a câmera do app do banco  ·  R$ {valor}",
+                         font=(UI, 11), text_color=MUTED).pack(pady=(0, 12))
+        except Exception:
+            pass
+
+        def copiar(texto, aviso):
+            self.clipboard_clear()
+            self.clipboard_append(texto)
+            msg.configure(text=aviso)
+
+        btn(d, f"Copiar Pix copia e cola (R$ {valor})", lambda: copiar(code, "Código copiado: cole no app do banco."),
+            "primary", width=280).pack(pady=3)
+        btn(d, "Copiar só a chave (qualquer valor)", lambda: copiar(PIX_KEY, "Chave copiada."),
+            width=280).pack(pady=3)
+        msg = ctk.CTkLabel(d, text="", font=(UI, 11), text_color=GREEN)
+        msg.pack(pady=(6, 0))
+        ctk.CTkLabel(d, text=f"Obrigado!  {DEV_HANDLE}", font=(UI, 12, "bold"), text_color=TEXT).pack(pady=(6, 0))
+        d.after(200, lambda: (d.lift(), d.focus_force()))
 
     def update_key_button(self):
         has = bool(self.settings.get("client_id") and self.settings.get("client_secret"))
@@ -950,6 +1144,15 @@ class App(ctk.CTk):
                 f"{'Pasta' if m['folder'] else 'Arquivo'}: {m['name']}\nTamanho: {size}\n"
                 f"Conta: {m['account']}\nSalvar em: {dest}\n\nBaixar agora?"):
             return
+        old = find_partials(dest)
+        if old:
+            if messagebox.askyesno(
+                    "Sobras de downloads anteriores",
+                    f"Encontrei {len(old)} arquivo(s) incompleto(s) (.partial) de downloads interrompidos "
+                    f"nesta pasta, somando {fmt_bytes(sum(s for _, s in old))}.\n\n"
+                    "Eles não são reaproveitados e só ocupam espaço. Apagar antes de começar?"):
+                n, freed = delete_files(old)
+                self.say(f"Apagados {n} arquivo(s) .partial antigos ({fmt_bytes(freed)} liberados).")
         self.persist()
         name = m["account"]
         if m["folder"]:
@@ -958,7 +1161,11 @@ class App(ctk.CTk):
             cmd = ["backend", "copyid", name + ":", m["id"], dest + os.sep]
         if m["rk"]:
             cmd += ["--drive-resource-key", m["rk"]]
-        cmd += ["--multi-thread-streams", "4"]
+        # Um fluxo por arquivo: a integridade (md5) e conferida enquanto grava, e cada arquivo
+        # perde o ".partial" assim que termina. Com varios fluxos o rclone precisa reler o
+        # arquivo inteiro no fim, o que levou minutos nos testes (e horas em arquivos grandes).
+        # A velocidade vem de baixar ate 4 arquivos ao mesmo tempo.
+        cmd += ["--multi-thread-streams", "0"]
         jobs = [{"label": m["name"], "log": f"{m['name']}  ->  {dest}", "cmd": cmd, "src": None,
                  "size": m["size"]}]
         self.run_jobs(jobs, "Baixando", dest)
@@ -1072,9 +1279,12 @@ class App(ctk.CTk):
             name.configure(text=nm if len(nm) <= 46 else "..." + nm[-43:])
             pct.configure(text=f"{p:.0f}%")
             pb.set(max(0.0, min(1.0, p / 100.0)))
-            info.configure(text=(
-                f"{fmt_bytes(done)} de {fmt_bytes(size)}   ·   {fmt_speed(t.get('speed'))}"
-                f"   ·   falta {fmt_time(t.get('eta'))}"))
+            if size and done >= size:
+                info.configure(text=f"{fmt_bytes(size)}   ·   recebido, conferindo integridade antes de finalizar...")
+            else:
+                info.configure(text=(
+                    f"{fmt_bytes(done)} de {fmt_bytes(size)}   ·   {fmt_speed(t.get('speed'))}"
+                    f"   ·   falta {fmt_time(t.get('eta'))}"))
             if not frame.winfo_ismapped():
                 frame.pack(fill="x", pady=1)
 
@@ -1195,17 +1405,39 @@ class App(ctk.CTk):
             self.bell()
         if self.open_path and not cancelled:
             self.btn_open.pack(side="right", padx=8)
+        if self.open_path and (cancelled or failed):
+            self.offer_partial_cleanup(self.open_path)
+
+    def offer_partial_cleanup(self, dest):
+        """Download interrompido: oferece apagar os .partial que o rclone deixou."""
+        left = find_partials(dest)
+        if not left:
+            return
+        total = sum(s for _, s in left)
+        if messagebox.askyesno(
+                "Arquivos incompletos",
+                f"O download foi interrompido e ficaram {len(left)} arquivo(s) incompleto(s) (.partial), "
+                f"ocupando {fmt_bytes(total)}.\n\nEles não são reaproveitados: baixando de novo, o arquivo "
+                "começa do zero. Apagar agora?\n\n(Os arquivos que já terminaram não são afetados.)"):
+            n, freed = delete_files(left)
+            self.say(f"Apagados {n} arquivo(s) .partial ({fmt_bytes(freed)} liberados).")
+        else:
+            self.say(f"Mantidos {len(left)} arquivo(s) .partial em {dest}.")
 
     def on_close(self):
         if self.running:
             if not messagebox.askyesno("Sair", "Há uma transferência em andamento. Parar e sair?"):
                 return
             self.cancel = True
-            if self.proc:
+            p = self.proc
+            if p:
                 try:
-                    self.proc.terminate()
+                    p.terminate()
+                    p.wait(timeout=10)
                 except Exception:
                     pass
+            if self.open_path:
+                self.offer_partial_cleanup(self.open_path)
         if self.auth_proc:
             try:
                 self.auth_proc.kill()

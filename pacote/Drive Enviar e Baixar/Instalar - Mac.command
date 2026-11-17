@@ -61,7 +61,7 @@ echo "      $("$DATA/rclone" version | head -1)"
 
 # 3. Bibliotecas da interface
 echo "[3/4] Instalando as bibliotecas da interface..."
-if ! "$PY" -m pip install --upgrade --target "$DATA/libs" customtkinter certifi \
+if ! "$PY" -m pip install --upgrade --target "$DATA/libs" customtkinter certifi qrcode \
      --disable-pip-version-check -q 2>"$DATA/pip.log"; then
   echo "Falha ao instalar as bibliotecas. Detalhes em: $DATA/pip.log"
   fim 1
@@ -96,8 +96,8 @@ cat > "$APP/Contents/Info.plist" <<EOF
   <key>CFBundleName</key><string>$APP_NOME</string>
   <key>CFBundleDisplayName</key><string>$APP_NOME</string>
   <key>CFBundleIdentifier</key><string>local.drive-enviar-baixar</string>
-  <key>CFBundleVersion</key><string>1.0</string>
-  <key>CFBundleShortVersionString</key><string>1.0</string>
+  <key>CFBundleVersion</key><string>1.1</string>
+  <key>CFBundleShortVersionString</key><string>1.1</string>
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleExecutable</key><string>abrir</string>
   <key>CFBundleIconFile</key><string>icone</string>

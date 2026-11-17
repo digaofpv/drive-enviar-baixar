@@ -1,5 +1,7 @@
 # Drive Enviar e Baixar
 
+Desenvolvido por [@digao.fpv](https://instagram.com/digao.fpv) · versão atual na página de [Releases](../../releases/latest)
+
 Envia pastas inteiras para o Google Drive e baixa pastas por link, direto no disco: **sem cache, sem compactar em zip** e com progresso, velocidade e tempo restante de cada arquivo. Funciona com várias contas Google. Para Windows e Mac.
 
 Feito para quem trabalha com arquivos grandes (vídeo, bruto de câmera) e cansou do upload pelo navegador falhando, do app do Drive enchendo o disco de cache e de ter que zipar/deszipar pasta para baixar.
@@ -49,6 +51,15 @@ Não é obrigatório. Dá para usar o app só fazendo login nas contas, sem cria
 - `drive_uploader.pyw`: o programa (Python + [CustomTkinter](https://github.com/TomSchimansky/CustomTkinter), usando o rclone por baixo).
 - `pacote/`: instaladores e LEIA-ME de quem recebe o app.
 - `python montar_pacote.py` gera o zip (precisa do Pillow: `pip install pillow`).
+
+## Apoie o projeto
+
+O app é gratuito. Se ele te poupou tempo, considere apoiar com um Pix de **R$ 10,00** (ou o valor que quiser):
+
+- **Chave Pix (aleatória):** `d03514da-0d0b-4faf-a602-9535738eb698`
+- No app: **Sobre → ♥ Apoiar o projeto** mostra o QR Code pronto.
+
+Obrigado! [@digao.fpv](https://instagram.com/digao.fpv)
 
 ## Créditos e licença
 
