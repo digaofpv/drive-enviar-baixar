@@ -26,7 +26,7 @@ sys.path.insert(0, os.path.join(BASE, "libs"))
 import customtkinter as ctk  # noqa: E402
 
 APP_NAME = "Drive Enviar e Baixar"
-APP_VERSION = "1.1"
+APP_VERSION = "1.2"
 DEV_HANDLE = "@digao.fpv"
 DEV_URL = "https://instagram.com/digao.fpv"
 REPO_URL = "https://github.com/digaofpv/drive-enviar-baixar"
@@ -91,7 +91,9 @@ def set_icon(win):
 NOWIN = 0x08000000 if IS_WIN else 0  # Windows: nao abrir janela preta de console
 FOLDER_MIME = "application/vnd.google-apps.folder"
 SHORTCUT_MIME = "application/vnd.google-apps.shortcut"
-MAX_ROWS = 4  # arquivos simultaneos
+MAX_ROWS = 4  # linhas de "arquivos em andamento" mostradas na tela
+LOG_MAX = 400  # linhas guardadas no registro (mais que isso deixa a janela pesada)
+DEFAULTS = {"transfers": 4, "bw_up": 0, "bw_down": 0}  # 0 = sem limite (MB/s)
 
 # cores
 BG = "#14171c"
@@ -444,6 +446,8 @@ class App(ctk.CTk):
         self.pending_download = False
         self.open_path = None
         self.job_info = ""
+        self._last = {}       # ultimo valor de cada texto/barra (so redesenha o que mudou)
+        self._logbuf = []     # linhas do registro esperando para entrar de uma vez
 
         self.build_header()
         self.build_tabs()
@@ -466,6 +470,10 @@ class App(ctk.CTk):
         ctk.CTkButton(top, text="ⓘ  Sobre", command=self.about_dialog, width=74, height=26,
                       fg_color="transparent", hover_color=CARD2, text_color=MUTED,
                       font=(UI, 12), corner_radius=6).pack(side="right")
+        self.btn_cfg = ctk.CTkButton(top, text="⚙  Configurações", command=self.settings_dialog, width=120,
+                                     height=26, fg_color="transparent", hover_color=CARD2, text_color=MUTED,
+                                     font=(UI, 12), corner_radius=6)
+        self.btn_cfg.pack(side="right", padx=(0, 4))
         dev = ctk.CTkLabel(top, text=f"desenvolvido por {DEV_HANDLE}", font=(UI, 12, "underline"),
                            text_color=MUTED, cursor="hand2")
         dev.pack(side="right", padx=10)
@@ -580,6 +588,85 @@ class App(ctk.CTk):
         msg.pack(pady=(6, 0))
         ctk.CTkLabel(d, text=f"Obrigado!  {DEV_HANDLE}", font=(UI, 12, "bold"), text_color=TEXT).pack(pady=(6, 0))
         d.after(200, lambda: (d.lift(), d.focus_force()))
+
+    def cfg(self, key):
+        try:
+            return int(self.settings.get(key, DEFAULTS[key]))
+        except (TypeError, ValueError):
+            return DEFAULTS[key]
+
+    def settings_dialog(self):
+        if self.busy():
+            messagebox.showinfo("Configurações", "Espere a transferência atual terminar para mudar as configurações.")
+            return
+        d = ctk.CTkToplevel(self)
+        d.title("Configurações")
+        set_icon(d)
+        d.geometry("520x430")
+        d.resizable(False, False)
+        d.configure(fg_color=BG)
+        d.transient(self)
+        ctk.CTkLabel(d, text="Configurações de transferência", font=(UI, 17, "bold"), text_color=TEXT
+                     ).pack(anchor="w", padx=22, pady=(20, 12))
+
+        ctk.CTkLabel(d, text="Arquivos ao mesmo tempo (envio e download)", font=(UI, 13, "bold"),
+                     text_color=TEXT).pack(anchor="w", padx=22)
+        ctk.CTkLabel(d, text="Mais arquivos juntos usam melhor a internet quando há muitos arquivos.\n"
+                             "Em HD comum, acima de 8 costuma piorar.", font=(UI, 11), text_color=MUTED,
+                     justify="left").pack(anchor="w", padx=22)
+        v_tr = tk.StringVar(value=str(self.cfg("transfers")))
+        ctk.CTkOptionMenu(d, values=["1", "2", "3", "4", "6", "8", "12", "16"], variable=v_tr, width=100,
+                          fg_color=CARD2, button_color=ACCENT, button_hover_color=ACCENT_H,
+                          dropdown_fg_color=CARD2).pack(anchor="w", padx=22, pady=(6, 16))
+
+        ctk.CTkLabel(d, text="Limite de velocidade (MB/s)", font=(UI, 13, "bold"), text_color=TEXT
+                     ).pack(anchor="w", padx=22)
+        ctk.CTkLabel(d, text="Deixe 0 para usar o máximo da internet (padrão). Use um limite se a internet\n"
+                             "da casa ou do escritório ficar lenta durante as transferências.",
+                     font=(UI, 11), text_color=MUTED, justify="left").pack(anchor="w", padx=22)
+        row = ctk.CTkFrame(d, fg_color="transparent")
+        row.pack(anchor="w", padx=22, pady=(6, 0))
+        v_up = tk.StringVar(value=str(self.cfg("bw_up")))
+        v_dn = tk.StringVar(value=str(self.cfg("bw_down")))
+        for label, var in (("Envio", v_up), ("Download", v_dn)):
+            ctk.CTkLabel(row, text=label, font=(UI, 12), text_color=TEXT).pack(side="left")
+            ctk.CTkEntry(row, textvariable=var, width=70, height=32, fg_color=CARD, border_color=CARD2,
+                         corner_radius=8).pack(side="left", padx=(6, 22))
+        ctk.CTkLabel(d, text="1 MB/s ≈ 8 Mbps (a medida das operadoras de internet).", font=(UI, 11),
+                     text_color=MUTED).pack(anchor="w", padx=22, pady=(4, 0))
+
+        def save():
+            try:
+                up, dn = int(float(v_up.get() or 0)), int(float(v_dn.get() or 0))
+                if up < 0 or dn < 0:
+                    raise ValueError
+            except ValueError:
+                messagebox.showerror("Configurações", "Use números inteiros (0 = sem limite).", parent=d)
+                return
+            self.settings.update({"transfers": int(v_tr.get()), "bw_up": up, "bw_down": dn})
+            save_settings(self.settings)
+            self.say(f"Configurações: {v_tr.get()} arquivos ao mesmo tempo; limite de envio "
+                     f"{up or 'nenhum'}{' MB/s' if up else ''}, de download {dn or 'nenhum'}{' MB/s' if dn else ''}.")
+            d.destroy()
+
+        bot = ctk.CTkFrame(d, fg_color="transparent")
+        bot.pack(fill="x", padx=22, pady=20, side="bottom")
+        btn(bot, "Salvar", save, "primary", width=110).pack(side="right")
+        btn(bot, "Cancelar", d.destroy, width=100).pack(side="right", padx=8)
+        btn(bot, "Restaurar padrão", lambda: (v_tr.set(str(DEFAULTS["transfers"])), v_up.set("0"), v_dn.set("0")),
+            width=130).pack(side="left")
+        d.after(200, lambda: (d.lift(), d.focus_force(), d.grab_set()))
+
+    def rclone_speed_flags(self):
+        """Opcoes de desempenho comuns a envio e download."""
+        tr = self.cfg("transfers")
+        flags = ["--transfers", str(tr), "--checkers", str(max(8, tr * 2)), "--buffer-size", "32M"]
+        up, dn = self.cfg("bw_up"), self.cfg("bw_down")
+        if up or dn:
+            flags += ["--bwlimit", f"{f'{up}M' if up else 'off'}:{f'{dn}M' if dn else 'off'}"]
+        if self.settings.get("client_id"):  # com chave propria o limite de consultas e so seu: pode ir mais rapido
+            flags += ["--drive-pacer-min-sleep", "10ms", "--drive-pacer-burst", "200"]
+        return flags
 
     def update_key_button(self):
         has = bool(self.settings.get("client_id") and self.settings.get("client_secret"))
@@ -775,6 +862,7 @@ class App(ctk.CTk):
         self.lbl_norows = ctk.CTkLabel(self.rows_frame, text="Nenhum arquivo em andamento.",
                                        text_color=MUTED, font=(UI, 12))
         self.lbl_norows.pack(anchor="w", padx=6, pady=4)
+        self.lbl_more = ctk.CTkLabel(self.rows_frame, text="", text_color=MUTED, font=(UI, 11))
 
         self.log = ctk.CTkTextbox(f, height=80, fg_color=BG, text_color=MUTED, font=(MONO, 11),
                                   corner_radius=8, wrap="none", state="disabled")
@@ -782,13 +870,37 @@ class App(ctk.CTk):
 
     # ------------------------------------------------------------ utilidades
     def say(self, text):
+        self._logbuf.append(text)  # entra na tela de uma vez, no proximo ciclo (mais leve)
+
+    def flush_log(self):
+        if not self._logbuf:
+            return
+        lines, self._logbuf = self._logbuf, []
         self.log.configure(state="normal")
-        self.log.insert("end", text + "\n")
+        self.log.insert("end", "\n".join(lines) + "\n")
+        total = int(self.log.index("end-1c").split(".")[0])
+        if total > LOG_MAX:
+            self.log.delete("1.0", f"{total - LOG_MAX}.0")
         self.log.see("end")
         self.log.configure(state="disabled")
 
+    def _set(self, widget, **kw):
+        """Muda um texto/cor so se for diferente do atual (cada mudanca redesenha o elemento)."""
+        key = id(widget)
+        val = tuple(sorted(kw.items()))
+        if self._last.get(key) != val:
+            self._last[key] = val
+            widget.configure(**kw)
+
+    def _bar(self, pb, frac):
+        frac = round(max(0.0, min(1.0, frac)), 3)
+        key = ("pb", id(pb))
+        if self._last.get(key) != frac:
+            self._last[key] = frac
+            pb.set(frac)
+
     def status(self, text, color=TEXT):
-        self.lbl_status.configure(text=text, text_color=color)
+        self._set(self.lbl_status, text=text, text_color=color)
 
     def remote(self):
         return self.om_remote.get().strip()
@@ -1186,10 +1298,10 @@ class App(ctk.CTk):
         self.set_controls(False)
         self.btn_cancel.configure(state="normal", text="Cancelar")
         self.pb.configure(progress_color=ACCENT)
-        self.pb.set(0)
-        self.lbl_pct.configure(text="0%")
+        self._bar(self.pb, 0)
+        self._set(self.lbl_pct, text="0%")
         for v in self.cards.values():
-            v.configure(text="--")
+            self._set(v, text="--")
         self.status(f"{verb}: preparando...")
         threading.Thread(target=self.worker, args=(jobs,), daemon=True).start()
 
@@ -1207,8 +1319,8 @@ class App(ctk.CTk):
             rest = sum((x["size"] or 0) for x in jobs[i + 1:])
             self.q.put(("item", i + 1, len(jobs), j["label"], rest))
             self.q.put(("log", f"[{i + 1}/{len(jobs)}] {j['log']}"))
-            cmd = [RCLONE, "--config", CONF] + j["cmd"] + [
-                "--transfers", str(MAX_ROWS), "--use-json-log", "--stats", "1s", "-v"]
+            cmd = [RCLONE, "--config", CONF] + j["cmd"] + self.rclone_speed_flags() + [
+                "--use-json-log", "--stats", "1s", "-v"]
             try:
                 self.proc = subprocess.Popen(
                     cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
@@ -1276,32 +1388,46 @@ class App(ctk.CTk):
             if p is None:
                 p = 100.0 * done / size if size else 0
             nm = str(t.get("name", ""))
-            name.configure(text=nm if len(nm) <= 46 else "..." + nm[-43:])
-            pct.configure(text=f"{p:.0f}%")
-            pb.set(max(0.0, min(1.0, p / 100.0)))
+            self._set(name, text=nm if len(nm) <= 46 else "..." + nm[-43:])
+            self._set(pct, text=f"{p:.0f}%")
+            self._bar(pb, p / 100.0)
             if size and done >= size:
-                info.configure(text=f"{fmt_bytes(size)}   ·   recebido, conferindo integridade antes de finalizar...")
+                self._set(info, text=f"{fmt_bytes(size)}   ·   recebido, conferindo integridade antes de finalizar...")
             else:
-                info.configure(text=(
+                self._set(info, text=(
                     f"{fmt_bytes(done)} de {fmt_bytes(size)}   ·   {fmt_speed(t.get('speed'))}"
                     f"   ·   falta {fmt_time(t.get('eta'))}"))
             if not frame.winfo_ismapped():
-                frame.pack(fill="x", pady=1)
+                frame.pack(fill="x", pady=1, before=self.lbl_more if self.lbl_more.winfo_ismapped() else None)
+        extra = len(tr) - len(self.rows)
+        if extra > 0:
+            self._set(self.lbl_more, text=f"+ {extra} arquivo(s) em andamento ao mesmo tempo")
+            if not self.lbl_more.winfo_ismapped():
+                self.lbl_more.pack(anchor="w", padx=6)
+        elif self.lbl_more.winfo_ismapped():
+            self.lbl_more.pack_forget()
 
     # ------------------------------------------------------- fila de eventos
     def poll(self):
+        last_stats = None
         try:
             while True:
                 ev = self.q.get_nowait()
                 kind = ev[0]
+                if kind == "stats":  # so a mais recente importa: evita redesenhar varias vezes por ciclo
+                    last_stats = ev[1]
+                    continue
+                if last_stats is not None and kind in ("item", "done"):
+                    self.on_stats(last_stats)
+                    last_stats = None
                 if kind == "log":
                     self.say(ev[1])
                 elif kind == "item":
                     _, i, n, label, rest = ev
                     self.rest_bytes = rest
                     self.job_info = (f"item {i} de {n}  ·  " if n > 1 else "") + label
-                    self.pb.set(0)
-                    self.lbl_pct.configure(text="0%")
+                    self._bar(self.pb, 0)
+                    self._set(self.lbl_pct, text="0%")
                     self.status(f"{self.verb}:  {self.job_info}  (conferindo o que falta...)")
                 elif kind == "stats":
                     self.on_stats(ev[1])
@@ -1354,14 +1480,17 @@ class App(ctk.CTk):
                     self.on_done(ev[1], ev[2])
         except queue.Empty:
             pass
-        self.after(150, self.poll)
+        if last_stats is not None:
+            self.on_stats(last_stats)
+        self.flush_log()
+        self.after(200, self.poll)
 
     def on_stats(self, s):
         total, done = s.get("totalBytes") or 0, s.get("bytes") or 0
         elapsed = s.get("elapsedTime") or 0
         frac = done / total if total else 0
-        self.pb.set(max(0.0, min(1.0, frac)))
-        self.lbl_pct.configure(text=f"{frac * 100:.0f}%")
+        self._bar(self.pb, frac)
+        self._set(self.lbl_pct, text=f"{frac * 100:.0f}%")
         avg = done / elapsed if elapsed > 1 and done else 0
         eta = s.get("eta")
         rest = getattr(self, "rest_bytes", 0)
@@ -1369,11 +1498,15 @@ class App(ctk.CTk):
             eta = eta + rest / avg
         elif rest and eta is not None and not avg:
             eta = None
-        self.cards["done"].configure(text=f"{fmt_bytes(done)} / {fmt_bytes(total)}")
-        self.cards["cur"].configure(text=fmt_speed(s.get("speed")))
-        self.cards["avg"].configure(text=fmt_speed(avg))
-        self.cards["elapsed"].configure(text=fmt_time(elapsed))
-        self.cards["eta"].configure(text=fmt_time(eta))
+        self._set(self.cards["done"], text=f"{fmt_bytes(done)} / {fmt_bytes(total)}")
+        # o "speed" geral do rclone e uma media desde o inicio; a velocidade de agora e a
+        # soma da velocidade atual de cada arquivo em andamento (a mesma das linhas abaixo)
+        tr = s.get("transferring") or []
+        cur = sum((t.get("speed") or 0) for t in tr) if tr else 0
+        self._set(self.cards["cur"], text=fmt_speed(cur))
+        self._set(self.cards["avg"], text=fmt_speed(avg))
+        self._set(self.cards["elapsed"], text=fmt_time(elapsed))
+        self._set(self.cards["eta"], text=fmt_time(eta))
         files = f"{s.get('transfers', 0)} de {s.get('totalTransfers', 0)} arquivos"
         extra = "conferindo..." if s.get("checking") and not s.get("transferring") else files
         self.status(f"{self.verb}:  {self.job_info}   ({extra})")
@@ -1384,8 +1517,8 @@ class App(ctk.CTk):
         self.set_controls(True)
         self.btn_cancel.configure(state="disabled")
         self.show_rows([])
-        self.cards["cur"].configure(text="--")
-        self.cards["eta"].configure(text="--")
+        self._set(self.cards["cur"], text="--")
+        self._set(self.cards["eta"], text="--")
         if cancelled:
             self.status("Cancelado.", RED)
             self.say("Cancelado.")
@@ -1398,8 +1531,8 @@ class App(ctk.CTk):
                                    + "\n\nRepita a operação para continuar de onde parou.")
         else:
             self.pb.configure(progress_color=GREEN)
-            self.pb.set(1)
-            self.lbl_pct.configure(text="100%")
+            self._bar(self.pb, 1)
+            self._set(self.lbl_pct, text="100%")
             self.status("Concluído: tudo transferido e conferido.", GREEN)
             self.say("Concluído.")
             self.bell()

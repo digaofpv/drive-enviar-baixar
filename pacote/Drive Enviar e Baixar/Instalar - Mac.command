@@ -96,8 +96,8 @@ cat > "$APP/Contents/Info.plist" <<EOF
   <key>CFBundleName</key><string>$APP_NOME</string>
   <key>CFBundleDisplayName</key><string>$APP_NOME</string>
   <key>CFBundleIdentifier</key><string>local.drive-enviar-baixar</string>
-  <key>CFBundleVersion</key><string>1.1</string>
-  <key>CFBundleShortVersionString</key><string>1.1</string>
+  <key>CFBundleVersion</key><string>1.2</string>
+  <key>CFBundleShortVersionString</key><string>1.2</string>
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleExecutable</key><string>abrir</string>
   <key>CFBundleIconFile</key><string>icone</string>

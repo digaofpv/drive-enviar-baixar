@@ -1,4 +1,4 @@
-# Instalador do "Drive Enviar e Baixar" para Windows.
+﻿# Instalador do "Drive Enviar e Baixar" para Windows.
 # Instala na pasta do usuario; nao precisa de administrador.
 # Rodar de novo atualiza o programa e mantem as contas e a chave ja configuradas.
 param(

@@ -1,4 +1,4 @@
-# Remove o "Drive Enviar e Baixar" deste computador. Nada e apagado do Google Drive.
+﻿# Remove o "Drive Enviar e Baixar" deste computador. Nada e apagado do Google Drive.
 param(
     [string]$Destino = (Join-Path $env:LOCALAPPDATA 'Drive Enviar e Baixar'),
     [string]$PastaAtalhos = '',   # so para testes

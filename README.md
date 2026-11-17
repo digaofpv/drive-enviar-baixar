@@ -39,6 +39,7 @@ Não é obrigatório. Dá para usar o app só fazendo login nas contas, sem cria
 - **Baixar por link:** cole o link de uma pasta ou arquivo do Drive, escolha onde salvar. Ele descobre sozinho qual das suas contas tem acesso ao link e avisa se não cabe no disco.
 - **Métricas:** porcentagem e tempo restante de cada arquivo e do total, velocidade atual e média, tempo decorrido.
 - **Várias contas:** alterna entre contas pessoais e de trabalho num menu.
+- **Configurações:** quantos arquivos transferir ao mesmo tempo e limite de velocidade de envio e download (padrão: sem limite, o máximo da sua internet).
 
 ## Segurança
 
