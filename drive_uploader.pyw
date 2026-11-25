@@ -26,7 +26,7 @@ sys.path.insert(0, os.path.join(BASE, "libs"))
 import customtkinter as ctk  # noqa: E402
 
 APP_NAME = "Drive Enviar e Baixar"
-APP_VERSION = "1.2"
+APP_VERSION = "1.2.1"
 DEV_HANDLE = "@digao.fpv"
 DEV_URL = "https://instagram.com/digao.fpv"
 REPO_URL = "https://github.com/digaofpv/drive-enviar-baixar"
@@ -133,7 +133,9 @@ def drive_api(name, path, headers=None):
         except urllib.error.HTTPError as e:
             body = e.read().decode("utf-8", "replace")
             if e.code == 401 and attempt == 1:
-                rclone(["about", name + ":"], timeout=120)  # renova o login vencido
+                r = rclone(["about", name + ":"], timeout=120)  # renova o login vencido
+                if r.returncode != 0 and "invalid_grant" in (r.stderr or ""):
+                    raise LoginExpired(name)  # o Google nao renova mais: precisa logar de novo
                 continue
             flat = body.lower().replace("_", "")
             limited = e.code in (429, 500, 502, 503) or (
@@ -148,6 +150,10 @@ def drive_api(name, path, headers=None):
 
 class RateLimited(Exception):
     """O Google recusou por excesso de consultas (limite do login compartilhado do rclone)."""
+
+
+class LoginExpired(Exception):
+    """O login salvo da conta expirou ou foi revogado (invalid_grant): precisa reconectar."""
 
 
 def account_email(name):
@@ -492,6 +498,8 @@ class App(ctk.CTk):
         self.lbl_email.pack(side="left", padx=12)
         self.btn_del = btn(f, "Remover", self.del_account, "danger", width=84)
         self.btn_del.pack(side="right", padx=(6, 14))
+        self.btn_rec = btn(f, "↻  Reconectar", self.reconnect_account, width=110)
+        self.btn_rec.pack(side="right", padx=(6, 0))
         self.btn_add = btn(f, "+  Adicionar conta", self.add_account, width=140)
         self.btn_add.pack(side="right")
         self.btn_key = btn(f, "", self.key_dialog, width=120)
@@ -920,7 +928,7 @@ class App(ctk.CTk):
 
     def set_controls(self, enabled):
         st = "normal" if enabled else "disabled"
-        for w in (self.btn_up, self.btn_down, self.btn_add, self.btn_del, self.btn_key, self.om_remote):
+        for w in (self.btn_up, self.btn_down, self.btn_add, self.btn_del, self.btn_rec, self.btn_key, self.om_remote):
             w.configure(state=st)
 
     # ---------------------------------------------------------------- contas
@@ -1009,6 +1017,34 @@ class App(ctk.CTk):
                 except Exception:
                     pass
             self.q.put(("auth", name, ok, (err or "").strip()[-300:]))
+
+        threading.Thread(target=work, daemon=True).start()
+
+    def reconnect_account(self):
+        """Refaz o login de uma conta que expirou, sem perder apelido nem historico."""
+        name = self.remote()
+        if not name or self.busy():
+            return
+        self.set_controls(False)
+        self.btn_cancel.configure(state="normal", text="Cancelar login")
+        self.status(f"Reconectando \"{name}\": faça o login no navegador que abriu...")
+        self.say(f"Reconectando a conta \"{name}\": escolha a conta Google no navegador e clique em Permitir.")
+
+        def work():
+            try:
+                self.auth_proc = subprocess.Popen(
+                    [RCLONE, "--config", CONF, "config", "reconnect", name + ":", "--auto-confirm"],
+                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.DEVNULL,
+                    text=True, encoding="utf-8", errors="replace", creationflags=NOWIN)
+                self.auth_proc.communicate()
+            except Exception:
+                pass
+            self.auth_proc = None
+            try:
+                ok = rclone(["about", name + ":"], timeout=120).returncode == 0
+            except Exception:
+                ok = False
+            self.q.put(("reauth", name, ok))
 
         threading.Thread(target=work, daemon=True).start()
 
@@ -1171,12 +1207,16 @@ class App(ctk.CTk):
 
         def work():
             last = ""
+            expired = []
             for name in order:
                 try:
                     m = file_meta(name, fid, rk)
                 except RateLimited:
                     self.q.put(("meta_limit", tok))
                     return
+                except LoginExpired:
+                    expired.append(name)
+                    continue
                 except urllib.error.HTTPError as e:
                     last = f"sem acesso (erro {e.code})"
                     continue
@@ -1197,6 +1237,9 @@ class App(ctk.CTk):
                         self.q.put(("size", tok, s.get("bytes"), s.get("count")))
                     except Exception:
                         self.q.put(("size", tok, None, None))
+                return
+            if expired:
+                self.q.put(("meta_expired", tok, expired))
                 return
             self.q.put(("meta_fail", tok, last))
 
@@ -1456,6 +1499,25 @@ class App(ctk.CTk):
                             text="  O Google está limitando as consultas agora. Tente de novo em 1 minuto.\n"
                                  "  Para acabar com isso, cadastre sua chave própria no botão \"Chave Google\".",
                             text_color=RED)
+                elif kind == "reauth":
+                    _, name, ok = ev
+                    self.set_controls(True)
+                    self.btn_cancel.configure(state="disabled", text="Cancelar")
+                    if ok:
+                        self.status(f"Conta \"{name}\" reconectada.", GREEN)
+                        self.say(f"Conta \"{name}\" reconectada.")
+                    else:
+                        self.status(f"Não foi possível reconectar \"{name}\".", RED)
+                        self.say(f"Reconexão de \"{name}\" não concluída. Tente de novo ou remova e adicione a conta.")
+                elif kind == "meta_expired":
+                    if ev[1] == self.meta_token:
+                        self.pending_download = False
+                        contas = ", ".join(ev[2])
+                        self.lbl_meta.configure(
+                            text=f"  O login da(s) conta(s) {contas} expirou: o Google pede para entrar de novo.\n"
+                                 "  Escolha a conta no topo e clique em \"Reconectar\". Depois clique em Verificar.",
+                            text_color=RED)
+                        self.say(f"Login expirado: {contas}. Use o botão Reconectar.")
                 elif kind == "meta_fail":
                     if ev[1] == self.meta_token:
                         self.pending_download = False
